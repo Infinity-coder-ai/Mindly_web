@@ -311,11 +311,11 @@ def show_dashboard(container):
                                 day_element.on('click', lambda e, element=day_element: toggle_mark_day(element))
                 
                 def toggle_mark_day(element):
-                    """Toggle the marked state of a calendar day"""
-                    if 'marked' in element.classes():
-                        element.remove_classes('marked')
+                    """Toggle the 'marked' class on the day element"""
+                    if 'marked' in element.classes:
+                        element.classes.remove('marked')
                     else:
-                        element.add_classes('marked')
+                        element.classes.add('marked')
                 
                 def change_month(delta):
                     """Change the displayed month by delta"""
