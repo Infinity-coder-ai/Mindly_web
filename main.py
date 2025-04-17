@@ -13,6 +13,34 @@ import re
 import os
 from dotenv import load_dotenv
 import socket
+from dashboard import show_dashboard
+from pdf_listener import show_pdf_listener
+from study_planner import show_planner
+from chatbox import show_chatbox
+from timer_manager import TimerManager
+from firebase_chat import get_firebase_chat
+import firebase_admin
+from firebase_admin import credentials
+import pyrebase
+
+# Load environment variables
+load_dotenv()
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('Main')
+
+# Initialize Firebase chat instance
+try:
+    firebase_chat = get_firebase_chat()
+    logger.info('Firebase chat initialized successfully')
+except Exception as e:
+    logger.error(f'Error initializing Firebase chat: {str(e)}')
+    raise
+
+# Initialize timer manager
+timer_manager = TimerManager()
+app.storage.timer_manager = timer_manager
 
 # Configure static files
 app.add_static_files('/static', 'static')
@@ -221,7 +249,10 @@ def home_page(request: Request):
     
     # Extract username and user_id from query parameters
     username = unquote(request.query_params.get('username', 'User'))
-    user_id = int(request.query_params.get('user_id', '1'))  # Default to 1 if not provided
+    user_id = int(request.query_params.get('user_id'))  # Default to 1 if not provided
+    
+    # Check if a section is specified in the query parameters
+    initial_section = request.query_params.get('section', 'dashboard')
     
     # Create the UI layout with proper order
     with ui.column().classes('w-full items-center justify-center'):
@@ -253,7 +284,10 @@ def home_page(request: Request):
         if section == 'dashboard':
             show_dashboard(content_container)
         elif section == 'chatbox':
-            show_chatbox(content_container)
+            with ui.element('div').classes('w-full text-center'):
+                
+             ui.timer(0.5, lambda: content_container.clear(), once=True)
+             ui.timer(0.6, lambda: show_chatbox(content_container), once=True)
         elif section == 'pdf':
             show_pdf_listener(content_container)
         elif section == 'planner':
@@ -261,8 +295,8 @@ def home_page(request: Request):
         elif section == 'notes':
             show_notes(content_container, user_id)  # Pass the user_id to show_notes
     
-    # Show the default dashboard view on initial load
-    show_dashboard(content_container)
+    # Show the initial section based on query parameter
+    switch_section(initial_section)
 
 # Global database instance
 db = None
@@ -302,7 +336,12 @@ def main():
         ports = [8080, 8081, 8082, 8083, 8084]
         for port in ports:
             try:
-                ui.run(port=port, title="Mindly - E-Learning Platform", reload=False)
+                ui.run(
+                    port=port, 
+                    title="Mindly - E-Learning Platform", 
+                    reload=False,
+                    storage_secret="your-secret-key-for-storage"
+                )
                 break
             except OSError:
                 if port == ports[-1]:
@@ -330,11 +369,11 @@ async def handle_login(email: str, password: str):
     
     try:
         print("Calling database login function...")
-        result, message = db.login_user(email, password)
+        result, message= db.login_user(email, password)
         
         if result and isinstance(result, dict) and 'username' in result:
             username = result['username']
-            user_id = result.get('id', 1)  # Get user_id from result, default to 1 if not found
+            user_id = result.get('id')  # Get user_id from result, default to 1 if not found
             print(f"Login successful for user: {username}")
             ui.notify(f'Login successful! Welcome {username}', color='positive')
             # Delay navigation slightly for the notification to be visible
@@ -347,52 +386,6 @@ async def handle_login(email: str, password: str):
     except Exception as e:
         print(f"Exception during login: {str(e)}")
         ui.notify(f'An error occurred: {str(e)}', color='negative')
-
-def show_dashboard(container):
-    """Display the main dashboard interface"""
-    with container:
-        ui.label('Dashboard').classes('text-xl font-semibold mb-4')
-        with ui.column().classes('w-full gap-4'):
-            ui.label('Welcome to your learning dashboard').classes('text-gray-600')
-            
-            # Quick access cards
-            with ui.row().classes('w-full gap-4'):
-                with ui.card().classes('flex-grow p-4 cursor-pointer').on('click', lambda: show_pdf_editor(container)):
-                    with ui.column().classes('items-center gap-2'):
-                        ui.icon('picture_as_pdf').classes('text-2xl text-red-600')
-                        ui.label('PDF Editor').classes('font-semibold')
-                        ui.label('Edit and annotate PDFs').classes('text-xs text-gray-600')
-                
-                with ui.card().classes('flex-grow p-4 cursor-pointer').on('click', lambda: show_planner(container)):
-                    with ui.column().classes('items-center gap-2'):
-                        ui.icon('calendar_today').classes('text-2xl text-blue-600')
-                        ui.label('Study Planner').classes('font-semibold')
-                        ui.label('Plan your study schedule').classes('text-xs text-gray-600')
-                
-                with ui.card().classes('flex-grow p-4 cursor-pointer').on('click', lambda: show_notes(container)):
-                    with ui.column().classes('items-center gap-2'):
-                        ui.icon('note').classes('text-2xl text-green-600')
-                        ui.label('Notes').classes('font-semibold')
-                        ui.label('Take and organize notes').classes('text-xs text-gray-600')
-            
-            # Recent activity
-            with ui.card().classes('w-full p-4 mt-4'):
-                ui.label('Recent Activity').classes('font-bold mb-2')
-                with ui.column().classes('w-full gap-2'):
-                    with ui.row().classes('w-full items-center p-2 hover:bg-gray-100 rounded'):
-                        ui.icon('picture_as_pdf').classes('text-red-600')
-                        ui.label('Uploaded Calculus notes').classes('text-sm')
-                        ui.label('2 hours ago').classes('text-xs text-gray-600 ml-auto')
-                    
-                    with ui.row().classes('w-full items-center p-2 hover:bg-gray-100 rounded'):
-                        ui.icon('calendar_today').classes('text-blue-600')
-                        ui.label('Added new study session').classes('text-sm')
-                        ui.label('5 hours ago').classes('text-xs text-gray-600 ml-auto')
-                    
-                    with ui.row().classes('w-full items-center p-2 hover:bg-gray-100 rounded'):
-                        ui.icon('note').classes('text-green-600')
-                        ui.label('Created new note').classes('text-sm')
-                        ui.label('Yesterday').classes('text-xs text-gray-600 ml-auto')
 
 if __name__ == "__main__":
     main()

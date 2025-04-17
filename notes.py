@@ -177,6 +177,7 @@ def load_flashcards(user_id):
     """Load flashcards from database"""
     try:
         cursor = db.connection.cursor(dictionary=True)
+        print("check this yask",user_id )
         cursor.execute("""
             SELECT * FROM flashcards 
             WHERE user_id = %s 

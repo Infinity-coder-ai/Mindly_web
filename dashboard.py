@@ -139,34 +139,32 @@ def show_dashboard(container):
     
     # Add JavaScript for the analog clock
     ui.add_head_html('''
-    <script>
-        function updateAnalogClock() {
-            const now = new Date();
-            const hours = now.getHours() % 12;
-            const minutes = now.getMinutes();
-            const seconds = now.getSeconds();
+   <script>
+    function updateAnalogClock() {
+        const now = new Date();
+        const hours = now.getHours() % 12;
+        const minutes = now.getMinutes();
+        const seconds = now.getSeconds();
+        
+        const hourHand = document.querySelector('.clock-hour');
+        const minuteHand = document.querySelector('.clock-minute');
+        const secondHand = document.querySelector('.clock-second');
+        
+        if (hourHand && minuteHand && secondHand) {
+            const hourDeg = (hours * 30) + (0.5 * minutes);
+            const minuteDeg = (minutes * 6) + (0.1 * seconds);
+            const secondDeg = seconds * 6;
             
-            const hourHand = document.querySelector('.clock-hour');
-            const minuteHand = document.querySelector('.clock-minute');
-            const secondHand = document.querySelector('.clock-second');
-            
-            if (hourHand && minuteHand && secondHand) {
-                const hourDeg = (hours * 30) + (0.5 * minutes);
-                const minuteDeg = (minutes * 6) + (0.1 * seconds);
-                const secondDeg = seconds * 6;
-                
-                hourHand.style.transform = `translateY(-50%) rotate(${hourDeg}deg)`;
-                minuteHand.style.transform = `translateY(-50%) rotate(${minuteDeg}deg)`;
-                secondHand.style.transform = `translateY(-50%) rotate(${secondDeg}deg)`;
-            }
+              hourHand.style.transform = `rotate(${hourDeg - 183}deg)`;
+            minuteHand.style.transform = `rotate(${minuteDeg +178}deg)`;
+            secondHand.style.transform = `rotate(${secondDeg - 90}deg)`;
         }
-        
-        // Update clock every second
-        setInterval(updateAnalogClock, 1000);
-        
-        // Initial update
-        document.addEventListener('DOMContentLoaded', updateAnalogClock);
-    </script>
+    }
+
+    setInterval(updateAnalogClock, 1000);
+    document.addEventListener('DOMContentLoaded', updateAnalogClock);
+</script>
+
     ''')
     
     # Add notification sound
@@ -213,12 +211,13 @@ def show_dashboard(container):
                     
                     # Update time every second
                     async def update_time():
-                        while True:
-                            current_time = datetime.now().strftime("%H:%M:%S")
-                            time_label.set_text(f"Today is {current_date} | Current time: {current_time}")
-                            await asyncio.sleep(1)
-                    
-                    ui.timer(0.1, lambda: asyncio.create_task(update_time()))
+                      while True:
+                       current_time = datetime.now().strftime("%H:%M:%S")
+                       time_label.set_text(f"Today is {current_date} | Current time: {current_time}")
+                       await asyncio.sleep(1)
+
+                    asyncio.create_task(update_time())
+
                 
                 # Add animation icon
                 with ui.column().classes('items-center'):

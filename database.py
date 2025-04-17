@@ -17,8 +17,8 @@ class Database:
             
             self.connection = mysql.connector.connect(
                 host=os.getenv('DB_HOST', 'localhost'),
-                user=os.getenv('DB_USER', 'elearning_user'),
-                password=os.getenv('DB_PASSWORD', 'sql@123'),
+                user=os.getenv('DB_USER', 'root'),
+                password=os.getenv('DB_PASSWORD', 'Happy242zero'),
                 database=os.getenv('DB_NAME', 'elearning_db')
             )
             
@@ -97,7 +97,7 @@ class Database:
             
             if bcrypt.checkpw(password.encode('utf-8'), user[3].encode('utf-8')):
                 print(f"Successful login for user: {user[1]}")
-                return {'id': user[0], 'username': user[1], 'email': user[2]}, "Login successful"
+                return {'id': user[0], 'username': user[2], 'email': user[1]}, "Login successful"
             else:
                 print(f"Invalid password for user: {user[1]}")
                 return None, "Invalid password"

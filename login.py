@@ -397,7 +397,8 @@ def handle_login(email, password, login_container):
             
             # Use ui.navigate.to() for page transition with properly formatted URL
             username = result['username']
-            ui.timer(0.8, lambda: ui.navigate.to(f'/home?username={username}'))
+            user_id = result['id']  # Get user_id from result
+            ui.timer(0.8, lambda: ui.navigate.to(f'/home?username={username}&user_id={user_id}'))
         else:
             print(f"Login failed: {message}")
             ui.notify(message, color='negative')
